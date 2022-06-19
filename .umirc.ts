@@ -9,6 +9,6 @@ export default defineConfig({
   mode: 'site',
   // more config: https://d.umijs.org/config
   devServer: {
-    https: true,
+    // https: true,
   },
 });
