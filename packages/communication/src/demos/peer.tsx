@@ -5,9 +5,10 @@ import React from 'react';
 const roomId = 'bTWkAMaGWLyjH59hsrz5t45Cf5KGVKBCMY1';
 
 export default () => {
-  const peer = React.useRef(new Peer(window.location.hash.substring(1) || '123'));
+  const peer = React.useRef();
   const conn = React.useRef(null);
   const localVideoRef = React.useRef(null);
+  const remoteVideoRef = React.useRef(null);
 
   const [form] = Form.useForm();
   const [localStream, setLocalStream] = React.useState<any>();
@@ -16,16 +17,16 @@ export default () => {
   const [memberCount, setMemberCount] = React.useState<number>(0);
 
   React.useEffect(() => {
-    if (!peer.current) return;
-    if (!conn.current) return;
+    // if (!conn.current) return;
+    peer.current = new Peer(window.location.hash.substring(1) || '123');
     peer.current.on('open', function (id) {
       console.log('My peer ID is: ' + id);
-      conn.current.on('data', function (data) {
+      peer.current.on('data', function (data) {
         console.log('Received', data);
       });
     });
     peer.current.on('connection', function (conn) {
-      console.log(conn);
+      console.log(conn, 'connection');
     });
 
     peer.current.on('call', function (call) {
@@ -34,6 +35,14 @@ export default () => {
         call.answer(stream); // Answer the call with an A/V stream.
         call.on('stream', (remoteStream) => {
           console.log(remoteStream, 'call接受stream');
+
+          if ('srcObject' in remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = stream;
+          } else {
+            // 在支持srcObject的浏览器上，不再支持使用这种方式
+            remoteVideoRef.current.src = URL.createObjectURL(stream);
+          }
+          remoteVideoRef.current.play();
           // Show stream in some <video> element.
         });
       });
@@ -65,6 +74,13 @@ export default () => {
         call.on('stream', (remoteStream) => {
           // Show stream in some <video> element.
           console.log(remoteStream, '接受stream');
+          if ('srcObject' in remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = stream;
+          } else {
+            // 在支持srcObject的浏览器上，不再支持使用这种方式
+            remoteVideoRef.current.src = URL.createObjectURL(stream);
+          }
+          remoteVideoRef.current.play();
         });
       })
       .catch(console.warn);
@@ -73,6 +89,7 @@ export default () => {
   return (
     <div>
       <video ref={localVideoRef}></video>
+      <video ref={remoteVideoRef}></video>
       <Form form={form}>
         <Form.Item name="msg">
           <Input style={{ width: 'calc(100% - 200px)' }} />
